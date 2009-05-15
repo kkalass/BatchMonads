@@ -1,10 +1,10 @@
 package de.kalass.batchmonads.base
 
-class BatchExecutor(hdlers : List[TypeHandler[_]]) {
+class BatchExecutor(hdlers : List[Service]) {
   
-  val handlers = new ReturnHandler(Nil) :: hdlers
+  val handlers = new ReturnHandler() :: hdlers
   
-  def this(handlers: TypeHandler[_]*) = this(handlers.toList)
+  def this(handlers: Service*) = this(handlers.toList)
   
   /**
    * Split the given list of monads into a tuple of two lists. The first list
@@ -21,15 +21,15 @@ class BatchExecutor(hdlers : List[TypeHandler[_]]) {
   /**
    * divide all monads into the approriate type handlers
    */
-   private def deriveHandlers(monads: List[Tuple2[BatchMonad[_], Int]], handlers: List[TypeHandler[_]]) : List[Tuple2[TypeHandler[_], List[Tuple2[BatchMonadResult[_], Int]]]] = {
+   private def deriveHandlers(monads: List[Tuple2[BatchMonad[_], Int]], handlers: List[Service]) : List[Tuple2[Service, List[Tuple2[BatchMonadResult[_], Int]]]] = {
 	  if (handlers.isEmpty && !monads.isEmpty) {
 		  throw new IllegalStateException("No Handler registered for monads: " + monads)
 	  }
 	  if (handlers.isEmpty) {
 		  List()
 	  } else {
-		  val (handler, remaining) = handlers.head.derive(monads)
-		  (handler, handler.process()) :: deriveHandlers(remaining, handlers.tail)
+		  val (handler, remaining, result) = handlers.head.derive(monads)
+		  (handler, result) :: deriveHandlers(remaining, handlers.tail)
 	  }
   }
 
@@ -38,11 +38,11 @@ class BatchExecutor(hdlers : List[TypeHandler[_]]) {
    * 
    * FIXME: maintain the order of the input list  
    */
-  def process[A](monads: BatchMonad[A]*) : List[BatchMonadResult[A]] = process(monads.toList, handlers)._2.map(_.asInstanceOf[BatchMonadResult[A]])
+  def process[A](monads: List[BatchMonad[A]]) : List[BatchMonadResult[A]] = process(monads, handlers)._2.map(_.asInstanceOf[BatchMonadResult[A]])
   
   private def applySequenceTuple(tuple: Tuple2[Tuple2[Sequence[_,_],Int], BatchMonadResult[_]]): Tuple2[BatchMonad[_], Int] = (tuple._1._1.applyAnyResult(tuple._2.result),tuple._1._2) 
   
-  private def process(monads: List[BatchMonad[_]], handlers: List[TypeHandler[_]]) : Tuple2[List[TypeHandler[_]], List[BatchMonadResult[_]]] = {
+  private def process(monads: List[BatchMonad[_]], handlers: List[Service]) : Tuple2[List[Service], List[BatchMonadResult[_]]] = {
 	  if (monads.isEmpty) {
 		  (handlers, Nil)
 	  } else {
@@ -60,8 +60,8 @@ class BatchExecutor(hdlers : List[TypeHandler[_]]) {
 		  val recursionResultsWithInputIndex = recursionResults.zip(sequenceOutputMonadWithInputIndex).map(t => (t._1, t._2._2))
 
 		  // now, let the handlers do the (possibly slow and expensive) "real" work with side-effects, but keep track of the input index 
-		  val handlersWithResults: List[Tuple2[TypeHandler[_], List[Tuple2[BatchMonadResult[_], Int]]]] = 
-			  for (handler <- deriveHandlers(indexedRemaining, handlers)) yield {handler}
+		  val handlersWithResults: List[Tuple2[Service, List[Tuple2[BatchMonadResult[_], Int]]]] = 
+			  for (partialResult <- deriveHandlers(indexedRemaining, handlers)) yield {partialResult}
 
 		  val results: List[Tuple2[BatchMonadResult[_], Int]] = recursionResultsWithInputIndex ++ handlersWithResults.flatMap(_._2)
 
