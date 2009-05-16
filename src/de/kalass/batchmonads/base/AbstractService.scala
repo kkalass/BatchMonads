@@ -70,7 +70,15 @@ trait AbstractService extends Service {
 
     private var handlers = List[TypeHandler[_,_]]()
     
-    protected def registerOperation[M <: Operation[A], A](test: Operation[_] => Boolean)(fkt: List[M] => List[Result[A]]) {
-        handlers = new TypeHandler(test, fkt) :: handlers
+    /**
+     * Registers a batchable operation.
+     * 
+     * @param canExecute a function that tests wether an operation can be executed by the given executor. 
+     *                      Most importantly this means, that the type needs to be checked in this function
+     * @param executeAll the function that "executes" a list of given operations, will be called by the framework
+     *                      when a batchable execution is executed.
+     */
+    protected def registerOperation[M <: Operation[A], A](canExecute: Operation[_] => Boolean)(executeAll: List[M] => List[Result[A]]) {
+        handlers = new TypeHandler(canExecute, executeAll) :: handlers
     }
 }
