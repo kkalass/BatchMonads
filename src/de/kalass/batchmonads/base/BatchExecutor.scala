@@ -1,5 +1,21 @@
 package de.kalass.batchmonads.base
 
+/**
+* Current Shortcomings:
+    * <ul>
+*   <li>If the sequence operator is forgotten and Monads are simply placed each on a line, 
+*       there is no warning whatsoever that this code has no effects (apart from using processing power and memory ;-))</li>
+*   <li>Transaction Handling and automatic Batch splitting needs to be introduced</li>
+*   <li>Side effects by a modifying monad to other monads need to be considered (i.e. if the BMs retrieve a customer, 
+        *       then do some other stuff and later on modify the customer, the code might behave differently if the two
+        *       original monads are explicitely processed in sequence, or as a batch given to the executor)</li>
+*   <li>What about connected monad types? How do I ensure that the ModifyTicketsHandler effectively evicts (or better: replaces) 
+*       the results of the RetrieveTicktesHandler</li>
+*   <li>The Interface for TypeHandlers must become much safer and much simpler</li>
+*   <li></li>
+* </ul>
+* 
+*/
 class BatchExecutor(hdlers : List[Service]) {
 
     private val handlers = new ReturnHandler() :: hdlers
