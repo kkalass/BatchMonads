@@ -2,6 +2,8 @@ package de.kalass.batchmonads.example
 
 import de.kalass.batchmonads.base.Return
 import de.kalass.batchmonads.base.BatchExecutor
+import de.kalass.batchmonads.base.Success
+import de.kalass.batchmonads.base.Error
 
 /**
 * Current Shortcomings:
@@ -38,7 +40,10 @@ object ExampleApp {
 
     def main(args: Array[java.lang.String]) {
 
+        // create an executor that knows all our services
         val executor = new BatchExecutor(new CustomerService(), new TicketService(), new SiteService());
+
+        // create the items we want to execute
         val list = List(getTicketsOfCustomer(1), getTicketsOfCustomer(2), getTicketsOfCustomer(3))
 
         println("*****************************")
@@ -54,6 +59,13 @@ object ExampleApp {
         println("*****************************")
         println("Do the batching:")
         println("*****************************")
-        executor.process(list)
+        val results = executor.process(list)
+          
+        // ok - lets examine the results
+        results.foreach( _ match {
+        case Success(result) => println("Success! Got " + result)
+        case Error(msg) => println("Error: " + msg)
+        })
+
     }
 }

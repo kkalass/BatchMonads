@@ -1,6 +1,6 @@
 package de.kalass.batchmonads.base
 
-class Sequence[A, B](val a: BatchMonad[A], private val fkt: A => BatchMonad[B]) extends BatchMonad[B] {
+private[base] class Sequence[A, B](val a: BatchMonad[A], private val fkt: A => BatchMonad[B]) extends BatchMonad[B] {
 
   override def toString(): String = a + "°" + fkt
 

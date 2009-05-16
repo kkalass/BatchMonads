@@ -1,8 +1,7 @@
 package de.kalass.batchmonads.base
 
+case class Return[A](private[base] result: A) extends BatchMonad[A]
 
-class ReturnHandler[A] extends SingleTypeService[Return[A],A](_.isInstanceOf[Return[_]]) {
-    def process(monads: List[Return[A]]) = {
-        monads.map(monad => new BatchMonadResult(monad.a))
-    }
+private[base] class ReturnHandler[A] extends AbstractService {
+  registerOperation[Return[A], A](_.isInstanceOf[Return[_]]) (_.map(monad => Success(monad.result)))
 }

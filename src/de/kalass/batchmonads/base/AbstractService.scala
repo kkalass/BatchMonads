@@ -1,19 +1,17 @@
 package de.kalass.batchmonads.base
 
-trait TypeHandler[M, A] {
 
-    def canProcess(monad: BatchMonad[_]): Boolean
-
+trait AbstractService extends Service {
     /**
     * Process the given List of Monads, and return a list with the corresponding result objects,
     * in the same order as the input list.
     */
-    def process(monads: List[M]): List[BatchMonadResult[A]]
-    
-    private[base] def processAny(monads: List[_]): List[BatchMonadResult[A]] = process(monads.map(_.asInstanceOf[M]))
-}
-
-trait AbstractService extends Service {
+    private class TypeHandler[M, A](
+            private[base] val canProcess: BatchMonad[_] => Boolean, 
+            private[base] val process: List[M] => List[BatchMonadResult[A]]
+    ) {
+        private[AbstractService] def processAny(monads: List[_]): List[BatchMonadResult[A]] = process(monads.map(_.asInstanceOf[M]))
+    }
 
     private def appendToMap(
             monadWithIndex: Tuple2[BatchMonad[_], Int], 
@@ -36,9 +34,9 @@ trait AbstractService extends Service {
             }
     }
     
-    def derive(monads: List[Tuple2[BatchMonad[_], Int]]): Tuple3[Service, List[Tuple2[BatchMonad[_], Int]], List[Tuple2[BatchMonadResult[_], Int]]] = {
+    protected[base] def derive(monads: List[Tuple2[BatchMonad[_], Int]]): Tuple3[Service, List[Tuple2[BatchMonad[_], Int]], List[Tuple2[BatchMonadResult[_], Int]]] = {
             val monadsWithIndexByHandlerMap = scala.collection.mutable.Map[TypeHandler[_,_], List[Tuple2[BatchMonad[_], Int]]]()
-            val handlers = getHandlers()
+            val handlers = this.handlers
             val remaining = new scala.collection.mutable.ListBuffer[Tuple2[BatchMonad[_], Int]]()
             for (monadWithIndex <- monads) {
                 if (!appendToMap(monadWithIndex, handlers, monadsWithIndexByHandlerMap)) {
@@ -70,5 +68,9 @@ trait AbstractService extends Service {
             (this, remaining.toList, results.flatMap(a => a).toList)
     }
 
-    def getHandlers(): List[TypeHandler[_,_]]
+    private var handlers = List[TypeHandler[_,_]]()
+    
+    protected def registerOperation[M <: BatchMonad[A], A](test: BatchMonad[_] => Boolean)(fkt: List[M] => List[BatchMonadResult[A]]) {
+        handlers = new TypeHandler(test, fkt) :: handlers
+    }
 }

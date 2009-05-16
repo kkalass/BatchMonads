@@ -1,37 +1,34 @@
 package de.kalass.batchmonads.example
 
 import de.kalass.batchmonads.base.AbstractService;
-import de.kalass.batchmonads.base.TypeHandler;
-import de.kalass.batchmonads.base.BatchMonadResult;
+import de.kalass.batchmonads.base.Success;
 import de.kalass.batchmonads.base.BatchMonad;
 
-case class RetrieveTicket(val id: Long) extends BatchMonad[Ticket]
-case class RetrieveTicketsOfCustomer(customerId: Long) extends BatchMonad[List[Ticket]]
+// Define Batchable Operations offered by this Service
+case class RetrieveTicket(val id: Long) extends BatchMonad[Ticket]{}
+case class RetrieveTicketsOfCustomer(customerId: Long) extends BatchMonad[List[Ticket]]{}
 
 class TicketService extends AbstractService {
-  
-  class RetrieveTicketsOfCustomerHandler extends TypeHandler[RetrieveTicketsOfCustomer, List[Ticket]] {
-    
-    def canProcess(monad: BatchMonad[_]) = monad.isInstanceOf[RetrieveTicketsOfCustomer]
-    
-    def process(monads: List[RetrieveTicketsOfCustomer]) = {
-      // dummy implementation, just for demonstration.
-      monads.map(monad => {
-        println("getTicketsOfCustomer(" + monad.customerId + ")")
-        new BatchMonadResult(List(new Ticket(monad.customerId)))
-      })
+
+    /**
+    * Retrieves all Tickets with the requested Ids from the datasource.
+    */
+    registerOperation[RetrieveTicket, Ticket](_.isInstanceOf[RetrieveTicket])
+    { 
+        for (retrieveTicket <- _) yield {
+            println("getTicket(" + retrieveTicket.id + ")")
+            Success(new Ticket(retrieveTicket.id))
+        }
     }
-  }
-  
-  class RetrieveTicketHandler extends TypeHandler[RetrieveTicket, Ticket] {
-    
-    def canProcess(monad: BatchMonad[_]) = monad.isInstanceOf[RetrieveTicket]
-    
-    def process(monads: List[RetrieveTicket]) = {
-      // dummy implementation, just for demonstration.
-      monads.map(monad => new BatchMonadResult(new Ticket(monad.id)))
+
+    /**
+    * Retrieves the Tickets of the given Customers from the datasource.
+    */
+    registerOperation[RetrieveTicketsOfCustomer, List[Ticket]](_.isInstanceOf[RetrieveTicketsOfCustomer]) 
+    { 
+        for (retrieveTicketsOfCustomer <- _) yield {
+            println("getTicketsOfCustomer(" + retrieveTicketsOfCustomer.customerId + ")")
+            Success(List(new Ticket(retrieveTicketsOfCustomer.customerId)))
+        }
     }
-  }
-  
-  def getHandlers() = List(new RetrieveTicketsOfCustomerHandler, new RetrieveTicketHandler)
 }
