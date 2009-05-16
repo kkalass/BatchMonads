@@ -2,9 +2,9 @@ package de.kalass.batchmonads.example
 
 import de.kalass.batchmonads.base.AbstractService;
 import de.kalass.batchmonads.base.Success;
-import de.kalass.batchmonads.base.BatchMonad;
+import de.kalass.batchmonads.base.Operation;
 
-case class RetrieveSite(id: Long) extends BatchMonad[Site]{}
+case class RetrieveSite(id: Long) extends Operation[Site]{}
 
 class SiteService extends AbstractService {
 

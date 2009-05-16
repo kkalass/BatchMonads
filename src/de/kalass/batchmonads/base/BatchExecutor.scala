@@ -11,8 +11,8 @@ class BatchExecutor(hdlers : List[Service]) {
     * will contain all sequences, and the second will contain all 
     * base monads
     */
-    private def extractSequences(monads: List[BatchMonad[_]]) : Tuple2[List[Tuple2[Sequence[_,_], Int]], List[Tuple2[BatchMonad[_], Int]]] = {
-        Util.divideList2[BatchMonad[_], Sequence[_,_]](monads.zipWithIndex, _ match {
+    private def extractSequences(monads: List[Operation[_]]) : Tuple2[List[Tuple2[Sequence[_,_], Int]], List[Tuple2[Operation[_], Int]]] = {
+        Util.divideList2[Operation[_], Sequence[_,_]](monads.zipWithIndex, _ match {
         case s: Sequence[_,_] => Some(s)
         case _ => None
         })
@@ -21,7 +21,7 @@ class BatchExecutor(hdlers : List[Service]) {
     /**
     * divide all monads into the approriate type handlers
     */
-    private def deriveHandlers(monads: List[Tuple2[BatchMonad[_], Int]], handlers: List[Service]) : List[Tuple2[Service, List[Tuple2[BatchMonadResult[_], Int]]]] = {
+    private def deriveHandlers(monads: List[Tuple2[Operation[_], Int]], handlers: List[Service]) : List[Tuple2[Service, List[Tuple2[Result[_], Int]]]] = {
         if (handlers.isEmpty && !monads.isEmpty) {
             throw new IllegalStateException("No Handler registered for monads: " + monads)
         }
@@ -36,13 +36,13 @@ class BatchExecutor(hdlers : List[Service]) {
     /**
     * Process the given monads such that the corresponding operations are executed in a batched way.
     */
-    def process[A](monads: List[BatchMonad[A]]) : List[BatchMonadResult[A]] = process(monads, handlers)._2.map(_.asInstanceOf[BatchMonadResult[A]])
+    def process[A](monads: List[Operation[A]]) : List[Result[A]] = process(monads, handlers)._2.map(_.asInstanceOf[Result[A]])
 
     private class SequenceResult{}
-    private case class MonadSequenceResult(monad: BatchMonad[_], inputIdx: Int) extends SequenceResult {}
+    private case class MonadSequenceResult(monad: Operation[_], inputIdx: Int) extends SequenceResult {}
     private case class ErrorSequenceResult(error: Error, inputIdx: Int) extends SequenceResult {}
 
-    private def applySequenceTuple(tuple: Tuple2[Tuple2[Sequence[_,_],Int], BatchMonadResult[_]]): SequenceResult = {
+    private def applySequenceTuple(tuple: Tuple2[Tuple2[Sequence[_,_],Int], Result[_]]): SequenceResult = {
             val idx = tuple._1._2
             val sequence = tuple._1._1
             val inputResult = tuple._2
@@ -75,7 +75,7 @@ class BatchExecutor(hdlers : List[Service]) {
             }
     }
 
-    private def process(monads: List[BatchMonad[_]], handlers: List[Service]) : Tuple2[List[Service], List[BatchMonadResult[_]]] = {
+    private def process(monads: List[Operation[_]], handlers: List[Service]) : Tuple2[List[Service], List[Result[_]]] = {
             if (monads.isEmpty) {
                 (handlers, Nil)
             } else {
@@ -95,10 +95,10 @@ class BatchExecutor(hdlers : List[Service]) {
                 val recursionResultsWithInputIndex = recursionResults.zip(sequenceOutputMonadWithInputIndex).map(t => (t._1, t._2.inputIdx))
 
                 // now, let the handlers do the (possibly slow and expensive) "real" work with side-effects, but keep track of the input index 
-                val handlersWithResults: List[Tuple2[Service, List[Tuple2[BatchMonadResult[_], Int]]]] = 
+                val handlersWithResults: List[Tuple2[Service, List[Tuple2[Result[_], Int]]]] = 
                     for (partialResult <- deriveHandlers(indexedRemaining, handlers)) yield {partialResult}
 
-                val results: List[Tuple2[BatchMonadResult[_], Int]] = sequenceErrors.map(e => (e.error, e.inputIdx)) ++ recursionResultsWithInputIndex ++ handlersWithResults.flatMap(_._2)
+                val results: List[Tuple2[Result[_], Int]] = sequenceErrors.map(e => (e.error, e.inputIdx)) ++ recursionResultsWithInputIndex ++ handlersWithResults.flatMap(_._2)
 
                 // sort all results of the processing according to the corresponding input monads 
                 (handlersWithResults.map(_._1), results.sort((t1, t2) => t1._2 < t2._2).map(_._1))

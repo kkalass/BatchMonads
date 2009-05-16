@@ -2,11 +2,11 @@ package de.kalass.batchmonads.example
 
 import de.kalass.batchmonads.base.AbstractService;
 import de.kalass.batchmonads.base.Success;
-import de.kalass.batchmonads.base.BatchMonad;
+import de.kalass.batchmonads.base.Operation;
 
 // Define Batchable Operations offered by this Service
-case class RetrieveTicket(val id: Long) extends BatchMonad[Ticket]{}
-case class RetrieveTicketsOfCustomer(customerId: Long) extends BatchMonad[List[Ticket]]{}
+case class RetrieveTicket(val id: Long) extends Operation[Ticket]{}
+case class RetrieveTicketsOfCustomer(customerId: Long) extends Operation[List[Ticket]]{}
 
 class TicketService extends AbstractService {
 

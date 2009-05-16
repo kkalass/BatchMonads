@@ -2,9 +2,9 @@ package de.kalass.batchmonads.example
 
 import de.kalass.batchmonads.base.AbstractService;
 import de.kalass.batchmonads.base.Success;
-import de.kalass.batchmonads.base.BatchMonad;
+import de.kalass.batchmonads.base.Operation;
 
-case class RetrieveCustomer(val id: Long) extends BatchMonad[Customer] 
+case class RetrieveCustomer(val id: Long) extends Operation[Customer] 
 
 class CustomerService extends AbstractService {
   

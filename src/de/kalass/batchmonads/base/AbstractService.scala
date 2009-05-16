@@ -7,16 +7,16 @@ trait AbstractService extends Service {
     * in the same order as the input list.
     */
     private class TypeHandler[M, A](
-            private[base] val canProcess: BatchMonad[_] => Boolean, 
-            private[base] val process: List[M] => List[BatchMonadResult[A]]
+            private[base] val canProcess: Operation[_] => Boolean, 
+            private[base] val process: List[M] => List[Result[A]]
     ) {
-        private[AbstractService] def processAny(monads: List[_]): List[BatchMonadResult[A]] = process(monads.map(_.asInstanceOf[M]))
+        private[AbstractService] def processAny(monads: List[_]): List[Result[A]] = process(monads.map(_.asInstanceOf[M]))
     }
 
     private def appendToMap(
-            monadWithIndex: Tuple2[BatchMonad[_], Int], 
+            monadWithIndex: Tuple2[Operation[_], Int], 
             handlers : List[TypeHandler[_,_]], 
-            monadsWithIndexByHandlerMap: scala.collection.mutable.Map[TypeHandler[_,_], List[Tuple2[BatchMonad[_], Int]]]
+            monadsWithIndexByHandlerMap: scala.collection.mutable.Map[TypeHandler[_,_], List[Tuple2[Operation[_], Int]]]
     ): Boolean = {
             if (handlers.isEmpty) {
                 false
@@ -34,10 +34,10 @@ trait AbstractService extends Service {
             }
     }
     
-    protected[base] def derive(monads: List[Tuple2[BatchMonad[_], Int]]): Tuple3[Service, List[Tuple2[BatchMonad[_], Int]], List[Tuple2[BatchMonadResult[_], Int]]] = {
-            val monadsWithIndexByHandlerMap = scala.collection.mutable.Map[TypeHandler[_,_], List[Tuple2[BatchMonad[_], Int]]]()
+    protected[base] def derive(monads: List[Tuple2[Operation[_], Int]]): Tuple3[Service, List[Tuple2[Operation[_], Int]], List[Tuple2[Result[_], Int]]] = {
+            val monadsWithIndexByHandlerMap = scala.collection.mutable.Map[TypeHandler[_,_], List[Tuple2[Operation[_], Int]]]()
             val handlers = this.handlers
-            val remaining = new scala.collection.mutable.ListBuffer[Tuple2[BatchMonad[_], Int]]()
+            val remaining = new scala.collection.mutable.ListBuffer[Tuple2[Operation[_], Int]]()
             for (monadWithIndex <- monads) {
                 if (!appendToMap(monadWithIndex, handlers, monadsWithIndexByHandlerMap)) {
                     remaining + monadWithIndex
@@ -46,7 +46,7 @@ trait AbstractService extends Service {
             val results = for (monadsWithIndexByHandler <- monadsWithIndexByHandlerMap) yield {
                 val handler: TypeHandler[_,_] = monadsWithIndexByHandler._1
                 val monadsWithIndex = monadsWithIndexByHandler._2.reverse
-                val monadsWithIndices = scala.collection.mutable.LinkedHashMap[BatchMonad[_], List[Int]]()
+                val monadsWithIndices = scala.collection.mutable.LinkedHashMap[Operation[_], List[Int]]()
                 for (monadWithIndex <- monadsWithIndex) {
                   val monad = monadWithIndex._1
                   val index = monadWithIndex._2
@@ -70,7 +70,7 @@ trait AbstractService extends Service {
 
     private var handlers = List[TypeHandler[_,_]]()
     
-    protected def registerOperation[M <: BatchMonad[A], A](test: BatchMonad[_] => Boolean)(fkt: List[M] => List[BatchMonadResult[A]]) {
+    protected def registerOperation[M <: Operation[A], A](test: Operation[_] => Boolean)(fkt: List[M] => List[Result[A]]) {
         handlers = new TypeHandler(test, fkt) :: handlers
     }
 }

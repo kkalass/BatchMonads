@@ -24,7 +24,7 @@ import de.kalass.batchmonads.base.Error
 object ExampleApp {
 
     /**
-    * Demonstration of a function that uses the basic BatchMonads to build a new BatchMonad instance 
+    * Demonstration of a function that uses the basic BatchMonads to build a new Operation instance 
     */
     val getTicketsOfCustomer = (customerId: Long) => {
         RetrieveCustomer(customerId) ~ (customer => 
