@@ -6,7 +6,7 @@ trait AbstractService extends Service {
     * Process the given List of Monads, and return a list with the corresponding result objects,
     * in the same order as the input list.
     */
-    private class TypeHandler[I, A](
+    private class TypeHandler[I <:Operation[A], A](
             selector: PartialFunction[Operation[_], I], 
             process: List[I] => List[Result[A]],
             inputData: List[I],
@@ -91,16 +91,25 @@ trait AbstractService extends Service {
     /**
     * Registers a batchable operation.
     * 
-    * @param canExecute a function that tests wether an operation can be executed by the given executor. 
-    *                      Most importantly this means, that the type needs to be checked in this function
+    * @param selector a partial function that is defined for exactly the operations that should be executed in a batch by the given executeAll function
     * @param executeAll the function that "executes" a list of given operations, will be called by the framework
     *                      when a batchable execution is executed.
     */
-    protected def registerOperation[M <: Operation[A], A](selectInput: PartialFunction[Operation[_], M])(executeAll: List[M] => List[Result[A]]) {
-        handlers = new TypeHandler(selectInput, executeAll) :: handlers
+    protected def registerOperation[M <: Operation[A], A](selector: PartialFunction[Operation[_], M])(executeAll: List[M] => List[Result[A]]) {
+        handlers = new TypeHandler(selector, executeAll) :: handlers
     }
 
-    //    protected def registerBatchedOperation[I, O](selectInput: PartialFunction[Operation[_], I], fkt: List[I] => List[O]) {
-        //      
-        //    }
+    /**
+     * Registers a simple batchable operation.
+     * 
+     * <p>Executor functions registered with this method do not return the explicit Result object, but will return a 
+     * valid instance of their result type for every input value instead, so either the entire operation must fail with 
+     * an exception, or every input value will be afterwards regarded as been processed successfully.</p>
+     * 
+     * <p>Additionally, the input values given to the executor functions are not the operations themselves, but some input
+     * values created by calling the "cvt" function.</p>
+     */
+    protected def registerSimpleOperation[M <: Operation[A], I, A](selector: PartialFunction[Operation[_], M]) (cvt: M => I) (fkt: List[I] => List[A]) {
+        registerOperation[M,A](selector)(input => fkt(input.map(cvt)).map(Success(_)))
+    }
 }

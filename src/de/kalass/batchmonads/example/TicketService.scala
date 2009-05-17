@@ -13,12 +13,8 @@ class TicketService extends AbstractService {
     /**
     * Retrieves all Tickets with the requested Ids from the datasource.
     */
-    registerOperation[RetrieveTicket, Ticket]{case t:RetrieveTicket => t}
-    { 
-        for (retrieveTicket <- _) yield {
-            println("getTicket(" + retrieveTicket.id + ")")
-            Success(new Ticket(retrieveTicket.id))
-        }
+    registerSimpleOperation[RetrieveTicket, Long, Ticket]{case t:RetrieveTicket => t} {_.id} { 
+        _.map(id => {println("getTicket(" + id + ")");new Ticket(id)})
     }
 
     /**
