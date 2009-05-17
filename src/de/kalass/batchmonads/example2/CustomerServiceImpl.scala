@@ -13,7 +13,7 @@ class CustomerServiceImpl extends AbstractService with CustomerService {
     /**
     * Retrieves all Customers with the requested Ids from the datasource.
     */
-    registerOperation[RetrieveCustomer, Customer](_.isInstanceOf[RetrieveCustomer])
+    registerOperation[RetrieveCustomer, Customer]{case c: RetrieveCustomer => c}
     { retrieveCustomers => {
         for (retrieveCustomer <- retrieveCustomers) yield {
             println("getCustomer(" + retrieveCustomer.id + ")")

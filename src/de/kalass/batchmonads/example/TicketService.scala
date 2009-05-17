@@ -13,7 +13,7 @@ class TicketService extends AbstractService {
     /**
     * Retrieves all Tickets with the requested Ids from the datasource.
     */
-    registerOperation[RetrieveTicket, Ticket](_.isInstanceOf[RetrieveTicket])
+    registerOperation[RetrieveTicket, Ticket]{case t:RetrieveTicket => t}
     { 
         for (retrieveTicket <- _) yield {
             println("getTicket(" + retrieveTicket.id + ")")
@@ -24,7 +24,7 @@ class TicketService extends AbstractService {
     /**
     * Retrieves the Tickets of the given Customers from the datasource.
     */
-    registerOperation[RetrieveTicketsOfCustomer, List[Ticket]](_.isInstanceOf[RetrieveTicketsOfCustomer]) 
+    registerOperation[RetrieveTicketsOfCustomer, List[Ticket]]{case t: RetrieveTicketsOfCustomer => t} 
     { 
         for (retrieveTicketsOfCustomer <- _) yield {
             println("getTicketsOfCustomer(" + retrieveTicketsOfCustomer.customerId + ")")

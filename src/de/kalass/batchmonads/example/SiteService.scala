@@ -11,7 +11,7 @@ class SiteService extends AbstractService {
     /**
     * Retrieves all Sites with the requested Ids from the datasource.
     */
-    registerOperation[RetrieveSite, Site](_.isInstanceOf[RetrieveSite])
+    registerOperation[RetrieveSite, Site]{case s:RetrieveSite => s}
     { 
         _.map(retrieveSite =>  {
             println("getSite(" + retrieveSite.id + ")")
