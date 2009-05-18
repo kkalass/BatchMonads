@@ -23,9 +23,6 @@ class TicketServiceImpl extends TicketService {
 
     /**
     * Retrieves the Tickets of the given Customers from the datasource.
-    * 
-    * This example uses the default method for registering an operation by registering a selector for the command,
-    * and a function that converts a list of those commands into a list of results.
     */
     private val retrieveTicketsOfCustomers: BatchOperation[Long, List[Ticket]] = BatchOperation.create {
         customerIds => {
