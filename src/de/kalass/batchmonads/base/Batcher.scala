@@ -1,6 +1,6 @@
 package de.kalass.batchmonads.base
 
-class Context(map: Map[BatchOperation[_,_], Container[_,_]] ) {
+private class Context(map: Map[BatchOperation[_,_], Container[_,_]] ) {
     def this() = this(Map())
     def addOperationToBatcher[I, A](op: BatchedOperationSingleOp[I, A], idx: Int) : Context = {
         val newContainer: Container[I, A] = map.get(op.batcher) match {
@@ -41,18 +41,19 @@ private class Container[I, A](
 object BatchOperation {
     def create[I, A](fkt: List[I] => List[A]) = new BatchOperation(fkt)
 }
-// case class, so that we get a good equals implementation for free
-case class BatchOperation[I, A](val fkt: List[I] => List[A]) {
+class BatchOperation[I, A](val fkt: List[I] => List[A]) {
     def singleOperation(value: I): Operation[A] = new BatchedOperationSingleOp[I, A](value, this)
+    def apply(list: List[I]): List[A] = fkt(list)
 }
 
+// case class, so that we get a good equals implementation for free
 private case class BatchedOperationSingleOp[I, A](value: I, batcher: BatchOperation[I, A]) extends Operation[A] {
     private[base] def add(c: Context, idx: Int) = {
         c.addOperationToBatcher(this, idx)
     }
 }
 
-class BatcherService private(ctxt: Context) extends Service {
+private[base] class BatcherService private(ctxt: Context) extends Service {
     def this() = this(new Context())
 
     protected[base] def execute(operationsWithIndices: List[Tuple2[Operation[_], Int]]): ExecutionResult = {

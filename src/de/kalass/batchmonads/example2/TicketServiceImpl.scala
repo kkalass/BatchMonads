@@ -34,7 +34,7 @@ class TicketServiceImpl(customerService: CustomerService, siteService: SiteServi
     }
 
     /**
-    * Demonstration of a function that uses the basic BatchMonads to build a new Operation instance.
+    * Demonstration of a function that uses other Operation instances to build a new Operation instance.
     * 
     * What you see here is sequencing of several single operations. Each operation produces a result 
     * which will be used to create the next operation. Note how we use all retrieved data to build
