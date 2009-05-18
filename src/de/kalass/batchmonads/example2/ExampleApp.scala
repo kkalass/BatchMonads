@@ -7,52 +7,28 @@ import de.kalass.batchmonads.base.Error
 
 object ExampleApp {
 
-    object Client {
-        private val siteService: SiteService = new SiteServiceImpl();
-        private val ticketService: TicketService = new TicketServiceImpl();
-        private val customerService: CustomerService = new CustomerServiceImpl();
-
-        /**
-        * Demonstration of a function that uses the basic BatchMonads to build a new Operation instance 
-        */
-        val getTicketsOfCustomer = (customerId: Long) => {
-            customerService.retrieveCustomer(customerId) ~ (customer => 
-            siteService.retrieveSite(customer.siteId)  ~ (site => {
-                println("Demonstration of more complex function bodies")
-                ticketService.retrieveTicketsOfCustomer(customer.id) 
-            } ~ (tickets => {
-                println("about to return tickets of customer: " + customer)
-                Return((customer, site, tickets))
-            }
-            )))// close all those stupid braces...
-        }
-    }
 
     def main(args: Array[java.lang.String]) {
+      
+      // create services - do what spring would do :-)
+        val siteService: SiteService = new SiteServiceImpl()
+        val customerService: CustomerService = new CustomerServiceImpl()
+        val ticketService: TicketService = new TicketServiceImpl(customerService, siteService)
+
         val executor = new BatchExecutor();
 
-        // create the items we want to execute
-        val list = List(Client.getTicketsOfCustomer(1), Client.getTicketsOfCustomer(2), Client.getTicketsOfCustomer(3))
-
-        println("*****************************")
-        println("Execute each item on its own:")
-        println("*****************************")
-        for (item <- list) {
-            executor.process(List(item))    
-            println
-        }
-
-        println
-        println
-        println("*****************************")
-        println("Do the batching:")
-        println("*****************************")
-        val results = executor.process(list)
+        // simulate a client that simply wants to get the details of some customers
+        // (Hint: have a look at the output: Each step of the Operation will be batched!)
+        val results = executor.process(List(
+          ticketService.getTicketsOfCustomer(1), 
+          ticketService.getTicketsOfCustomer(2), 
+          ticketService.getTicketsOfCustomer(3))
+        )
 
         // ok - lets examine the results
         results.foreach( _ match {
-        case Success(result) => println("Success! Got " + result)
-        case Error(msg) => println("Error: " + msg)
+          case Success(result) => println("Success! Got " + result)
+          case Error(msg) => println("Error: " + msg)
         })
 
     }

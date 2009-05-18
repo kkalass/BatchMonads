@@ -5,6 +5,6 @@ import de.kalass.batchmonads.base.Success;
 import de.kalass.batchmonads.base.Operation;
 
 trait TicketService {
-    def retrieveTicket(id: Long): Operation[Ticket]
-    def retrieveTicketsOfCustomer(customerId: Long): Operation[List[Ticket]]
+    def getTicket(id: Long): Operation[Ticket]
+    def getTicketsOfCustomer(customerId: Long): Operation[Tuple3[Customer, Site, List[Ticket]]]
 }

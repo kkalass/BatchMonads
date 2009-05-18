@@ -6,11 +6,12 @@ import de.kalass.batchmonads.base.BatchOperation
 
 
 class SiteServiceImpl extends SiteService {
-    private val retrieveSites: BatchOperation[Long, Site] = BatchOperation.create ({
+  
+    private val getSites: BatchOperation[Long, Site] = BatchOperation.create ({
         _.map(id =>  {
             println("getSite(" + id + ")")
             new Site(id, "Site " + id)
         })
     }) 
-    def retrieveSite(id: Long): Operation[Site] = retrieveSites.singleOperation(id)
+    def getSite(id: Long): Operation[Site] = getSites.singleOperation(id)
 }

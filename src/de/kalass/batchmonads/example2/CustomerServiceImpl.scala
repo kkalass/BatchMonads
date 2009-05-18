@@ -6,7 +6,7 @@ import de.kalass.batchmonads.base.Operation
 
 class CustomerServiceImpl extends CustomerService {
 
-    private val retrieveCustomers: BatchOperation[Long, Customer] = BatchOperation.create({
+    private val getCustomers: BatchOperation[Long, Customer] = BatchOperation.create({
         ids => {
             println("------------")
             for (id <- ids) yield {
@@ -16,6 +16,6 @@ class CustomerServiceImpl extends CustomerService {
         }
     })
 
-    def retrieveCustomer(id: Long) = retrieveCustomers.singleOperation(id)
+    def getCustomer(id: Long) = getCustomers.singleOperation(id)
 }
 

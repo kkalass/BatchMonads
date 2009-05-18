@@ -5,5 +5,5 @@ import de.kalass.batchmonads.base.Success;
 import de.kalass.batchmonads.base.Operation;
 
 trait SiteService {
-    def retrieveSite(id: Long): Operation[Site]
+    def getSite(id: Long): Operation[Site]
 }
