@@ -8,9 +8,9 @@ import de.kalass.batchmonads.base.Error
 object ExampleApp {
 
     object Client {
-        private val siteService = new SiteServiceImpl();
-        private val ticketService = new TicketServiceImpl();
-        private val customerService = new CustomerServiceImpl();
+        private val siteService: SiteService = new SiteServiceImpl();
+        private val ticketService: TicketService = new TicketServiceImpl();
+        private val customerService: CustomerService = new CustomerServiceImpl();
 
         /**
         * Demonstration of a function that uses the basic BatchMonads to build a new Operation instance 
