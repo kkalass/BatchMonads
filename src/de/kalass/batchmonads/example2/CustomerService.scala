@@ -5,6 +5,6 @@ import de.kalass.batchmonads.base.Operation;
 trait CustomerService {
   
     def retrieveCustomer(id: Long): Operation[Customer]
-    
+    //val retrieveCustomer:(Long => Operation[Customer])
 }
 

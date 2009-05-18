@@ -1,27 +1,16 @@
 package de.kalass.batchmonads.example2
 
-import de.kalass.batchmonads.base.AbstractService;
-import de.kalass.batchmonads.base.Success;
-import de.kalass.batchmonads.base.Operation;
+import de.kalass.batchmonads.base.Success
+import de.kalass.batchmonads.base.Operation
+import de.kalass.batchmonads.base.BatchOperation
 
 
-class SiteServiceImpl extends AbstractService with SiteService {
-  
-    def retrieveSite(id: Long): Operation[Site] = RetrieveSite(id)
-  
-    //
-    // Define and register all base operations of this service
-    //
-    private case class RetrieveSite(id: Long) extends Operation[Site]{}
-    /**
-    * Retrieves all Sites with the requested Ids from the datasource.
-    */
-    registerOperation[RetrieveSite, Site]{case s: RetrieveSite => s}
-    { 
-        _.map(retrieveSite =>  {
-            println("getSite(" + retrieveSite.id + ")")
-            Success(new Site(retrieveSite.id, "Site " + retrieveSite.id))
+class SiteServiceImpl extends SiteService {
+    private val retrieveSites: BatchOperation[Long, Site] = BatchOperation.create ({
+        _.map(id =>  {
+            println("getSite(" + id + ")")
+            new Site(id, "Site " + id)
         })
-    }
-
+    }) 
+    def retrieveSite(id: Long): Operation[Site] = retrieveSites.singleOperation(id)
 }

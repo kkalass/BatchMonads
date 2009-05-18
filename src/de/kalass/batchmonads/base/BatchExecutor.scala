@@ -18,7 +18,7 @@ package de.kalass.batchmonads.base
 */
 class BatchExecutor(hdlers : List[Service]) {
 
-    private val handlers = new ReturnHandler() :: hdlers
+    private val handlers = new ReturnHandler() :: new BatcherService() :: hdlers
 
     def this(handlers: Service*) = this(handlers.toList)
 
@@ -44,7 +44,7 @@ class BatchExecutor(hdlers : List[Service]) {
         if (handlers.isEmpty) {
             List()
         } else {
-            val (handler, remaining, result) = handlers.head.derive(monads)
+            val ExecutionResult(handler, remaining, result) = handlers.head.execute(monads)
             (handler, result) :: deriveHandlers(remaining, handlers.tail)
         }
     }

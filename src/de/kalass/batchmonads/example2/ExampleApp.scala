@@ -7,13 +7,10 @@ import de.kalass.batchmonads.base.Error
 
 object ExampleApp {
 
-    def main(args: Array[java.lang.String]) {
-        val siteService = new SiteServiceImpl();
-        val ticketService = new TicketServiceImpl();
-        val customerService = new CustomerServiceImpl();
-        
-        // create an executor that knows all our services
-        val executor = new BatchExecutor(customerService, ticketService, siteService);
+    object Client {
+        private val siteService = new SiteServiceImpl();
+        private val ticketService = new TicketServiceImpl();
+        private val customerService = new CustomerServiceImpl();
 
         /**
         * Demonstration of a function that uses the basic BatchMonads to build a new Operation instance 
@@ -29,10 +26,13 @@ object ExampleApp {
             }
             )))// close all those stupid braces...
         }
+    }
 
+    def main(args: Array[java.lang.String]) {
+        val executor = new BatchExecutor();
 
         // create the items we want to execute
-        val list = List(getTicketsOfCustomer(1), getTicketsOfCustomer(2), getTicketsOfCustomer(3))
+        val list = List(Client.getTicketsOfCustomer(1), Client.getTicketsOfCustomer(2), Client.getTicketsOfCustomer(3))
 
         println("*****************************")
         println("Execute each item on its own:")

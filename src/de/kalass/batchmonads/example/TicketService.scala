@@ -22,9 +22,11 @@ class TicketService extends AbstractService {
     */
     registerOperation[RetrieveTicketsOfCustomer, List[Ticket]]{case t: RetrieveTicketsOfCustomer => t} 
     { 
-        for (retrieveTicketsOfCustomer <- _) yield {
-            println("getTicketsOfCustomer(" + retrieveTicketsOfCustomer.customerId + ")")
-            Success(List(new Ticket(retrieveTicketsOfCustomer.customerId)))
+        commands => {
+            println("getTicketsOfCustomers(" + commands + ")")
+            for (retrieveTicketsOfCustomer <- commands) yield {
+                Success(List(new Ticket(retrieveTicketsOfCustomer.customerId)))
+            }
         }
     }
 }

@@ -6,7 +6,7 @@ trait AbstractService extends Service {
     * Process the given List of Monads, and return a list with the corresponding result objects,
     * in the same order as the input list.
     */
-    private class TypeHandler[I <:Operation[A], A](
+    private class OperationHandler[I <:Operation[A], A](
             selector: PartialFunction[Operation[_], I], 
             process: List[I] => List[Result[A]],
             inputData: List[I],
@@ -16,7 +16,7 @@ trait AbstractService extends Service {
 
         def this(selector: PartialFunction[Operation[_], I], process: List[I] => List[Result[A]]) = this(selector, process, Nil, Map())
 
-        private [AbstractService] def consume(op: Tuple2[Operation[_], Int]): Tuple2[TypeHandler[I, A], Boolean] = {
+        private [AbstractService] def add(op: Tuple2[Operation[_], Int]): Tuple2[OperationHandler[I, A], Boolean] = {
             if (selector.isDefinedAt(op._1)) {
                 val value = selector(op._1)
                 val index = op._2
@@ -24,54 +24,58 @@ trait AbstractService extends Service {
                 case Some(list) => (inputData, indices.update(value, index :: list))
                 case None => (value :: inputData, indices.update(value, List(index)))
                 }
-                (new TypeHandler(selector, process, newInputData, newIndices), true)
+                (new OperationHandler(selector, process, newInputData, newIndices), true)
             } else {
                 (this, false)
             }
         }
 
         private[AbstractService] def execute(): List[Tuple2[Result[A], Int]] = {
-                val reversedInput = inputData.reverse
-                val result = process(reversedInput)
-                assert(result.length == inputData.length)
+                if (inputData.isEmpty) {
+                    List()
+                } else {
+                    val reversedInput = inputData.reverse
+                    val result = process(reversedInput)
+                    assert(result.length == inputData.length)
 
-                // go back to the full length, with one entry per input index
-                result.zip(reversedInput).flatMap(t => {
-                    val r = t._1
-                    val d = t._2
-                    val list = indices.getOrElse(d, throw new IllegalStateException)
-                    list.map(idx => (r, idx))
-                })
+                    // go back to the full length, with one entry per input index
+                    result.zip(reversedInput).flatMap(t => {
+                        val r = t._1
+                        val d = t._2
+                        val list = indices.getOrElse(d, throw new IllegalStateException)
+                        list.map(idx => (r, idx))
+                    })
+                }
         }
     }
 
-    private def consume(
+    private def addOperationToAppropriateHandler(
             monadWithIndex: Tuple2[Operation[_], Int], 
-            handlers : List[TypeHandler[_,_]] 
-    ): Tuple2[List[TypeHandler[_,_]], Boolean] = {
+            handlers : List[OperationHandler[_,_]] 
+    ): Tuple2[List[OperationHandler[_,_]], Boolean] = {
             if (handlers.isEmpty) {
                 (Nil, false)
             } else {
-                val (handler, consumed) = handlers.head.consume(monadWithIndex)
+                val (handler, consumed) = handlers.head.add(monadWithIndex)
                 if (consumed) {
                     (handler :: handlers.tail, true)
                 } else {
-                    val (handlers2, foundConsumer) = consume(monadWithIndex, handlers.tail)
+                    val (handlers2, foundConsumer) = addOperationToAppropriateHandler(monadWithIndex, handlers.tail)
                     (handler :: handlers2, foundConsumer)
                 }
             }
     }
 
-    private def consumeMonads(
+    private def addOperationsToHandlers(
             monadsWithIndex: List[Tuple2[Operation[_], Int]],
-            handlers: List[TypeHandler[_,_]]
-    ): Tuple2[List[TypeHandler[_,_]], List[Tuple2[Operation[_], Int]]] = {
+            handlers: List[OperationHandler[_,_]]
+    ): Tuple2[List[OperationHandler[_,_]], List[Tuple2[Operation[_], Int]]] = {
             if (monadsWithIndex.isEmpty) {
                 (handlers, Nil)
             } else {
                 val monadWithIndex = monadsWithIndex.head
-                val (handlers2, consumed) = consume(monadWithIndex, handlers)
-                val (handlers3, remaining) = consumeMonads(monadsWithIndex.tail, handlers2)
+                val (handlers2, consumed) = addOperationToAppropriateHandler(monadWithIndex, handlers)
+                val (handlers3, remaining) = addOperationsToHandlers(monadsWithIndex.tail, handlers2)
                 if (consumed) {
                     (handlers3, remaining)
                 } else {
@@ -80,13 +84,13 @@ trait AbstractService extends Service {
             }
     }
 
-    protected[base] def derive(monads: List[Tuple2[Operation[_], Int]]): Tuple3[Service, List[Tuple2[Operation[_], Int]], List[Tuple2[Result[_], Int]]] = {
-            val (handlers, remaining) = consumeMonads(monads, this.handlers)
+    protected[base] def execute(monads: List[Tuple2[Operation[_], Int]]): ExecutionResult = {
+            val (handlers, remaining) = addOperationsToHandlers(monads, this.handlers)
             val results = handlers.flatMap(_.execute())
-            (this, remaining.toList, results)
+            ExecutionResult(this, remaining.toList, results)
     }
 
-    private var handlers = List[TypeHandler[_,_]]()
+    private var handlers = List[OperationHandler[_,_]]()
 
     /**
     * Registers a batchable operation.
@@ -96,7 +100,7 @@ trait AbstractService extends Service {
     *                      when a batchable execution is executed.
     */
     protected def registerOperation[M <: Operation[A], A](selector: PartialFunction[Operation[_], M])(executeAll: List[M] => List[Result[A]]) {
-        handlers = new TypeHandler(selector, executeAll) :: handlers
+        handlers = new OperationHandler(selector, executeAll) :: handlers
     }
 
     /**

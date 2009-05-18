@@ -1,15 +1,14 @@
 package de.kalass.batchmonads.example2
 
 import de.kalass.batchmonads.base.AbstractService;
+import de.kalass.batchmonads.base.BatchOperation;
 import de.kalass.batchmonads.base.Success;
 import de.kalass.batchmonads.base.Result;
 import de.kalass.batchmonads.base.Operation;
 
 // Define Batchable Operations offered by this Service
 
-class TicketServiceImpl extends AbstractService with TicketService {
-    registerOperation[RetrieveTicketsOfCustomer, List[Ticket]]{case t: RetrieveTicketsOfCustomer => t} (retrieveTicketsOfCustomers)
-    registerSimpleOperation[RetrieveTicket, Long, Ticket] {case t: RetrieveTicket => t} {_.id} (retrieveTickets) 
+class TicketServiceImpl extends TicketService {
 
     /**
     * Retrieves all Tickets with the requested Ids from the datasource.
@@ -18,9 +17,8 @@ class TicketServiceImpl extends AbstractService with TicketService {
     * and every input value, and that additionally automatically maps the operation objects to the
     * value wrapped by the operation object.
     */
-    private def retrieveTickets(ticketIds: List[Long]) : List[Ticket] = ticketIds.map(new Ticket(_))
-    private case class RetrieveTicket(val id: Long) extends Operation[Ticket]{}
-    def retrieveTicket(id: Long): Operation[Ticket] = RetrieveTicket(id)
+    private val retrieveTickets: BatchOperation[Long, Ticket] = BatchOperation.create(_.map(new Ticket(_)))
+    def retrieveTicket(id: Long): Operation[Ticket] = retrieveTickets.singleOperation(id)
     
 
     /**
@@ -29,19 +27,20 @@ class TicketServiceImpl extends AbstractService with TicketService {
     * This example uses the default method for registering an operation by registering a selector for the command,
     * and a function that converts a list of those commands into a list of results.
     */
-    private def retrieveTicketsOfCustomers(commands: List[RetrieveTicketsOfCustomer]) : List[Result[List[Ticket]]] = {
-            for (retrieveTicketsOfCustomer <- commands) yield {
-                println("getTicketsOfCustomer(" + retrieveTicketsOfCustomer.customerId + ")")
-                Success(List(new Ticket(retrieveTicketsOfCustomer.customerId)))
+    private val retrieveTicketsOfCustomers: BatchOperation[Long, List[Ticket]] = BatchOperation.create {
+        customerIds => {
+            println("retrievTicketsOfCustomers(" + customerIds + ")")
+            for (customerId <- customerIds) yield {
+                List(new Ticket(customerId))
             }
+        }
     }
-    private case class RetrieveTicketsOfCustomer(customerId: Long) extends Operation[List[Ticket]]{}
     
     /**
      * Batchable Operation: Retrieve all tickets of the customer with the given Id.
      * @param customerId the Id of the customer 
      * @return the batchable (i.e. delayed, not yet executed) operation
      */
-    def retrieveTicketsOfCustomer(customerId: Long): Operation[List[Ticket]] = RetrieveTicketsOfCustomer(customerId)
+    def retrieveTicketsOfCustomer(customerId: Long): Operation[List[Ticket]] = retrieveTicketsOfCustomers.singleOperation(customerId)
 
 }

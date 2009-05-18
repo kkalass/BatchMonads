@@ -1,26 +1,21 @@
 package de.kalass.batchmonads.example2
 
-import de.kalass.batchmonads.base.AbstractService;
-import de.kalass.batchmonads.base.Success;
-import de.kalass.batchmonads.base.Operation;
+import de.kalass.batchmonads.base.BatchOperation
+import de.kalass.batchmonads.base.Operation
 
 
-class CustomerServiceImpl extends AbstractService with CustomerService {
-    
-    private case class RetrieveCustomer(val id: Long) extends Operation[Customer] 
-    def retrieveCustomer(id: Long): Operation[Customer] = RetrieveCustomer(id)
-  
-    /**
-    * Retrieves all Customers with the requested Ids from the datasource.
-    */
-    registerOperation[RetrieveCustomer, Customer]{case c: RetrieveCustomer => c}
-    { retrieveCustomers => {
-        for (retrieveCustomer <- retrieveCustomers) yield {
-            println("getCustomer(" + retrieveCustomer.id + ")")
-            Success(new Customer(retrieveCustomer.id, "Customer " + retrieveCustomer.id, 1))
+class CustomerServiceImpl extends CustomerService {
+
+    private val retrieveCustomers: BatchOperation[Long, Customer] = BatchOperation.create({
+        ids => {
+            println("------------")
+            for (id <- ids) yield {
+                println("getCustomer(" + id + ")")
+                new Customer(id, "Customer " + id, 1)
+            }
         }
-    }}
-    
-    
+    })
+
+    def retrieveCustomer(id: Long) = retrieveCustomers.singleOperation(id)
 }
 
