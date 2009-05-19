@@ -8,9 +8,8 @@ class CustomerServiceImpl extends CustomerService {
 
     private val getCustomers: BatchOperation[Long, Customer] = BatchOperation.create({
         ids => {
-            println("------------")
+            println("getCustomers(" + ids + ")")
             for (id <- ids) yield {
-                println("getCustomer(" + id + ")")
                 new Customer(id, "Customer " + id, 1)
             }
         }

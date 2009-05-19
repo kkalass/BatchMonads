@@ -19,11 +19,21 @@ object ExampleApp {
 
         // simulate a client that simply wants to get the details of some customers
         // (Hint: have a look at the output: Each step of the Operation will be batched!)
-        val results = executor.process(List(
+        val tasks = List(
           ticketService.getTicketsOfCustomer(1), 
           ticketService.getTicketsOfCustomer(2), 
-          ticketService.getTicketsOfCustomer(3))
+          ticketService.getTicketsOfCustomer(3)
         )
+
+        tasks.foreach({
+          task => 
+            println()
+            executor.process(List(task))
+        })
+
+        println()
+        val results = executor.process(tasks)
+        println()
 
         // ok - lets examine the results
         results.foreach( _ match {
