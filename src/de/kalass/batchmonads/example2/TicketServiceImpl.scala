@@ -1,9 +1,7 @@
 package de.kalass.batchmonads.example2
 
-import de.kalass.batchmonads.base.AbstractService;
 import de.kalass.batchmonads.base.BatchOperation;
 import de.kalass.batchmonads.base.Return;
-import de.kalass.batchmonads.base.Result;
 import de.kalass.batchmonads.base.Operation;
 
 // Define Batchable Operations offered by this Service

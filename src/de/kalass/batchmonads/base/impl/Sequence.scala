@@ -1,4 +1,4 @@
-package de.kalass.batchmonads.base
+package de.kalass.batchmonads.base.impl
 
 private[base] class Sequence[A, B](val a: Operation[A], private val fkt: A => Operation[B]) extends Operation[B] {
 

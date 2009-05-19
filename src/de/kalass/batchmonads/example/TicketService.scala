@@ -1,6 +1,6 @@
 package de.kalass.batchmonads.example
 
-import de.kalass.batchmonads.base.AbstractService;
+import de.kalass.batchmonads.base.CustomBatchProcessor;
 import de.kalass.batchmonads.base.Success;
 import de.kalass.batchmonads.base.Operation;
 
@@ -8,7 +8,7 @@ import de.kalass.batchmonads.base.Operation;
 case class RetrieveTicket(val id: Long) extends Operation[Ticket]{}
 case class RetrieveTicketsOfCustomer(customerId: Long) extends Operation[List[Ticket]]{}
 
-class TicketService extends AbstractService {
+class TicketService extends CustomBatchProcessor {
 
     /**
     * Retrieves all Tickets with the requested Ids from the datasource.

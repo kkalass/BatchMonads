@@ -1,6 +1,5 @@
 package de.kalass.batchmonads.example2
 
-import de.kalass.batchmonads.base.Success
 import de.kalass.batchmonads.base.Operation
 import de.kalass.batchmonads.base.BatchOperation
 

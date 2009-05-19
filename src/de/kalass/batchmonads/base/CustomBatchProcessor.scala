@@ -1,7 +1,12 @@
 package de.kalass.batchmonads.base
 
-
-trait AbstractService extends Service {
+/**
+ * Optional base class to enable creation of custom BatchProcessor implementations.
+ * 
+ * This can be seen as a more explicit and maybe better extensible alternative to the {@link BatchOperation} mechanism.
+ * 
+ */
+trait CustomBatchProcessor extends BatchProcessor {
     /**
     * Process the given List of Monads, and return a list with the corresponding result objects,
     * in the same order as the input list.
@@ -16,7 +21,7 @@ trait AbstractService extends Service {
 
         def this(selector: PartialFunction[Operation[_], I], process: List[I] => List[Result[A]]) = this(selector, process, Nil, Map())
 
-        private [AbstractService] def add(op: Tuple2[Operation[_], Int]): Tuple2[OperationHandler[I, A], Boolean] = {
+        private [CustomBatchProcessor] def add(op: Tuple2[Operation[_], Int]): Tuple2[OperationHandler[I, A], Boolean] = {
             if (selector.isDefinedAt(op._1)) {
                 val value = selector(op._1)
                 val index = op._2
@@ -30,7 +35,7 @@ trait AbstractService extends Service {
             }
         }
 
-        private[AbstractService] def execute(): List[Tuple2[Result[A], Int]] = {
+        private[CustomBatchProcessor] def execute(): List[Tuple2[Result[A], Int]] = {
                 if (inputData.isEmpty) {
                     List()
                 } else {
@@ -84,10 +89,10 @@ trait AbstractService extends Service {
             }
     }
 
-    protected[base] def execute(monads: List[Tuple2[Operation[_], Int]]): ExecutionResult = {
+    protected[base] def execute(monads: List[Tuple2[Operation[_], Int]]): BatchProcessorResult = {
             val (handlers, remaining) = addOperationsToHandlers(monads, this.handlers)
             val results = handlers.flatMap(_.execute())
-            ExecutionResult(this, remaining.toList, results)
+            BatchProcessorResult(this, remaining.toList, results)
     }
 
     private var handlers = List[OperationHandler[_,_]]()

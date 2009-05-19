@@ -1,4 +1,4 @@
-package de.kalass.batchmonads.base
+package de.kalass.batchmonads.base.impl
 
 private[base] object Util {
 

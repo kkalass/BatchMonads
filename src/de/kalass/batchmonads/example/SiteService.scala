@@ -1,12 +1,12 @@
 package de.kalass.batchmonads.example
 
-import de.kalass.batchmonads.base.AbstractService;
+import de.kalass.batchmonads.base.CustomBatchProcessor;
 import de.kalass.batchmonads.base.Success;
 import de.kalass.batchmonads.base.Operation;
 
 case class RetrieveSite(id: Long) extends Operation[Site]{}
 
-class SiteService extends AbstractService {
+class SiteService extends CustomBatchProcessor {
 
     /**
     * Retrieves all Sites with the requested Ids from the datasource.

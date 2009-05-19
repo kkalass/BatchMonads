@@ -1,7 +1,7 @@
 package de.kalass.batchmonads.example2
 
 import de.kalass.batchmonads.base.Return
-import de.kalass.batchmonads.base.BatchExecutor
+import de.kalass.batchmonads.base.Executor
 import de.kalass.batchmonads.base.Success
 import de.kalass.batchmonads.base.Error
 
@@ -15,7 +15,7 @@ object ExampleApp {
         val customerService: CustomerService = new CustomerServiceImpl()
         val ticketService: TicketService = new TicketServiceImpl(customerService, siteService)
 
-        val executor = new BatchExecutor();
+        val executor = new Executor();
 
         // simulate a client that simply wants to get the details of some customers
         // (Hint: have a look at the output: Each step of the Operation will be batched!)
