@@ -4,8 +4,6 @@ import de.kalass.batchmonads.base.BatchOperation;
 import de.kalass.batchmonads.base.Return;
 import de.kalass.batchmonads.base.Operation;
 
-// Define Batchable Operations offered by this Service
-
 class TicketServiceImpl(customerService: CustomerService, siteService: SiteService) extends TicketService {
   
     /**
