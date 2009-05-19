@@ -36,7 +36,7 @@ final class BatchOperation[I, A] private (val fkt: List[I] => List[A]) {
      * All Operation instances returned by calls to "singleOperation(...)" that 
      * are used at a corresponding position of the surrounding Operation  
      * will be grouped into one List during execution. 
-     * This list will be passed back to this BatchOperation  to create the list of result values.
+     * This list will be passed back to this BatchOperation to create the list of result values.
      * 
      * @param value the value to use as input to the BatchOperation when the operations are executed
      * @return an instance of Operation that can be used for sequencing and subsequent batched execution

@@ -1,7 +1,7 @@
 package de.kalass.batchmonads.base
 
 /**
- * Abstract base class for operations that are executed with an Executor.
+ * Abstract base class for the results of operations that are executed with an Executor.
  */
 class Result[+A]()
 
