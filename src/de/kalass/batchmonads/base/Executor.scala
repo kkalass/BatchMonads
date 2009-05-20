@@ -1,6 +1,8 @@
 package de.kalass.batchmonads.base
 
 import impl.Sequence
+import impl.BatchProcessor
+import impl.BatchProcessorResult
 
 /**
  * Executor for executing a list of Operations together in one batch.
@@ -24,7 +26,7 @@ import impl.Sequence
 */
 class Executor(batchPrcssrs : List[BatchProcessor]) {
 
-    private val batchProcessors = new impl.ReturnHandler() :: new impl.SingleOperationBatchProcessor() :: batchPrcssrs
+    private val batchProcessors = new impl.ReturnBatchHandler() :: new impl.SingleOperationBatchProcessor() :: batchPrcssrs
 
     def this(batchProcessors: BatchProcessor*) = this(batchProcessors.toList)
 
