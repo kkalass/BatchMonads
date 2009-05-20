@@ -1,4 +1,4 @@
-package de.kalass.batchmonads.example2
+package de.kalass.batchmonads.example
 
 import de.kalass.batchmonads.base.BatchOperation
 import de.kalass.batchmonads.base.Operation
