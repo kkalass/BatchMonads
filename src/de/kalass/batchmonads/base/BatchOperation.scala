@@ -41,6 +41,6 @@ final class BatchOperation[I, A] private (val fkt: List[I] => List[A]) {
      * @param value the value to use as input to the BatchOperation when the operations are executed
      * @return an instance of Operation that can be used for sequencing and subsequent batched execution
      */
-    def singleOperation(value: I): Operation[A] = new impl.SingleOperation[I, A](value, this)
+    def singleOperation(value: I): Operation[A] = new impl.BaseOperation[I, A](value, this)
 }
 

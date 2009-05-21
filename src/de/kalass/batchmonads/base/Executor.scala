@@ -26,7 +26,7 @@ import impl.BatchProcessorResult
 */
 class Executor(batchPrcssrs : List[BatchProcessor]) {
 
-    private val batchProcessors = new impl.ReturnBatchHandler() :: new impl.SingleOperationBatchProcessor() :: batchPrcssrs
+    private val batchProcessors = new impl.ReturnBatchProcessor() :: new impl.BaseOperationBatchProcessor() :: batchPrcssrs
 
     def this(batchProcessors: BatchProcessor*) = this(batchProcessors.toList)
 
@@ -36,24 +36,25 @@ class Executor(batchPrcssrs : List[BatchProcessor]) {
     * base operations
     */
     private def extractSequences(operations: List[Operation[_]]) : Tuple2[List[Tuple2[Sequence[_,_], Int]], List[Tuple2[Operation[_], Int]]] = {
-        impl.Util.divideList2[Operation[_], Sequence[_,_]](operations.zipWithIndex, _ match {
-        case s: Sequence[_,_] => Some(s)
-        case _ => None
-        })
+      impl.Util.divideList[Operation[_], Sequence[_,_]](operations.zipWithIndex, {case s: Sequence[_,_] => s})
     }
 
     /**
     * divide all operations into the approriate type batchProcessors
     */
     private def executeProcessors(operations: List[Tuple2[Operation[_], Int]], batchProcessors: List[BatchProcessor]) : List[Tuple2[BatchProcessor, List[Tuple2[Result[_], Int]]]] = {
-        if (batchProcessors.isEmpty && !operations.isEmpty) {
-            throw new IllegalStateException("No Handler registered for operations: " + operations)
-        }
-        if (batchProcessors.isEmpty) {
-            List()
-        } else {
-            val BatchProcessorResult(batchProcessor, remaining, result) = batchProcessors.head.execute(operations)
-            (batchProcessor, result) :: executeProcessors(remaining, batchProcessors.tail)
+        batchProcessors match {
+          case List() => {
+            if (!operations.isEmpty) {
+                throw new IllegalStateException("No Handler registered for operations: " + operations)
+            } else {
+                List()
+            }
+          }
+          case p :: ps => { 
+              val BatchProcessorResult(batchProcessor, remaining, result) = p.execute(operations)
+              (batchProcessor, result) :: executeProcessors(remaining, ps)
+          }
         }
     }
 
@@ -70,37 +71,21 @@ class Executor(batchPrcssrs : List[BatchProcessor]) {
     private case class SuccessSequenceResult(operation: Operation[_], inputIdx: Int) extends SequenceResult {}
     private case class ErrorSequenceResult(error: Error, inputIdx: Int) extends SequenceResult {}
 
-    private def applySequenceTuple(tuple: Tuple2[Tuple2[Sequence[_,_],Int], Result[_]]): SequenceResult = {
-            val idx = tuple._1._2
-            val sequence = tuple._1._1
-            val inputResult = tuple._2
-
-            inputResult match {
-            case Success(result) => SuccessSequenceResult(sequence.applyAnyResult(result),idx)
-            case e: Error => ErrorSequenceResult(e, idx)
-            }
+    private def applySequenceTuple(tuple: Tuple2[Tuple2[Sequence[_,_],Int], Result[_]]): SequenceResult = tuple match {
+      case ((sequence, idx), Success(result)) => SuccessSequenceResult(sequence.applyAnyResult(result),idx)
+      case ((sequence, idx), e: Error) => ErrorSequenceResult(e, idx)
     }
 
-    private def getErrors(sequenceResults: List[SequenceResult]): List[ErrorSequenceResult] = {
-            if (sequenceResults.isEmpty) {
-                Nil
-            } else {
-                sequenceResults.head match {
-                case m: SuccessSequenceResult => getErrors(sequenceResults.tail)
-                case e: ErrorSequenceResult => e :: getErrors(sequenceResults.tail)
-                }
-            }
+    private def getErrors(sequenceResults: List[SequenceResult]): List[ErrorSequenceResult] = sequenceResults match {
+      case List() => List()
+      case (r: SuccessSequenceResult) :: rs => getErrors(rs)
+      case (e: ErrorSequenceResult) :: rs => e :: getErrors(rs)
     }
 
-    private def getSuccesses(sequenceResults: List[SequenceResult]): List[SuccessSequenceResult] = {
-            if (sequenceResults.isEmpty) {
-                Nil
-            } else {
-                sequenceResults.head match {
-                case m: SuccessSequenceResult => m :: getSuccesses(sequenceResults.tail)
-                case e: ErrorSequenceResult => getSuccesses(sequenceResults.tail)
-                }
-            }
+    private def getSuccesses(sequenceResults: List[SequenceResult]): List[SuccessSequenceResult] = sequenceResults match {
+      case List() => List()
+      case (r: SuccessSequenceResult) :: rs => r :: getSuccesses(rs)
+      case (e: ErrorSequenceResult) :: rs => getSuccesses(rs)
     }
 
     private def process(operations: List[Operation[_]], batchProcessors: List[BatchProcessor]) : Tuple2[List[BatchProcessor], List[Result[_]]] = {
