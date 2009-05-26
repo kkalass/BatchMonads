@@ -96,7 +96,7 @@ class Executor(batchPrcssrs : List[BatchProcessor]) {
                 val (indexedSequences, indexedRemaining) = extractSequences(operations)
 
                 // recursion for the left side of the sequences
-                val (batchProcessors1, sequenceInputResults) = process(indexedSequences.map(_._1.a), batchProcessors)
+                val (batchProcessors1, sequenceInputResults) = process(indexedSequences.map(_._1.inputOperation), batchProcessors)
 
                 val sequenceResults = indexedSequences.zip(sequenceInputResults).map(applySequenceTuple _)
 
