@@ -36,7 +36,7 @@ class Executor(batchPrcssrs : List[BatchProcessor]) {
     * base operations
     */
     private def extractSequences(operations: List[Operation[_]]) : Tuple2[List[Tuple2[Sequence[_,_], Int]], List[Tuple2[Operation[_], Int]]] = {
-      impl.Util.divideList[Operation[_], Sequence[_,_]](operations.zipWithIndex, {case s: Sequence[_,_] => s})
+      impl.Util.partition[Operation[_], Sequence[_,_]](operations.zipWithIndex, {case s: Sequence[_,_] => s})
     }
 
     /**
