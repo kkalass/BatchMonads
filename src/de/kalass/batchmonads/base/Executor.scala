@@ -65,27 +65,35 @@ class Executor(batchPrcssrs : List[BatchProcessor]) {
     * executed as a batch again, so that a minimum amount of calls to the underlying
     * BatchedFunctions are executed.
     */
-    def process[A](operations: List[Operation[A]]) : List[Result[A]] = process(operations, batchProcessors)._2.map(_.asInstanceOf[Result[A]])
-
-    private class SequenceResult{}
-    private case class SuccessSequenceResult(operation: Operation[_], inputIdx: Int) extends SequenceResult {}
-    private case class ErrorSequenceResult(error: Error, inputIdx: Int) extends SequenceResult {}
-
-    private def applySequenceTuple(tuple: Tuple2[Tuple2[Sequence[_,_],Int], Result[_]]): SequenceResult = tuple match {
-      case ((sequence, idx), Success(result)) => SuccessSequenceResult(sequence.applyAnyResult(result),idx)
-      case ((sequence, idx), e: Error) => ErrorSequenceResult(e, idx)
+    def process[A](operations: List[Operation[A]]) : List[Result[A]] = {
+      val (_, results) = process(operations, batchProcessors)
+      results.map(_.asInstanceOf[Result[A]])
     }
 
-    private def getErrors(sequenceResults: List[SequenceResult]): List[ErrorSequenceResult] = sequenceResults match {
-      case List() => List()
-      case (r: SuccessSequenceResult) :: rs => getErrors(rs)
-      case (e: ErrorSequenceResult) :: rs => e :: getErrors(rs)
-    }
+    private case class SequenceOutputOperation(operation: Operation[_], inputIdx: Int) {}
+    private case class SequenceError(error: Error, inputIdx: Int) {}
 
-    private def getSuccesses(sequenceResults: List[SequenceResult]): List[SuccessSequenceResult] = sequenceResults match {
-      case List() => List()
-      case (r: SuccessSequenceResult) :: rs => r :: getSuccesses(rs)
-      case (e: ErrorSequenceResult) :: rs => getSuccesses(rs)
+    private def getSequenceOutputOperations(
+      indexedSequences: List[Tuple2[Sequence[_,_], Int]], 
+      inputOperationResults: List[Result[_]]
+    ) : Tuple2[List[SequenceOutputOperation], List[SequenceError]] = {
+      assert(indexedSequences.size == inputOperationResults.size)
+      
+      ((List[SequenceOutputOperation](), List[SequenceError]()) /: indexedSequences.zip(inputOperationResults)) {
+        (accumulated, inputValue: Tuple2[Tuple2[Sequence[_,_], Int], Result[_]]) => {
+          val (outputOperations, sequenceErrors) = accumulated
+          
+          val sequence = inputValue._1._1
+          val idx = inputValue._1._2
+          val result = inputValue._2
+
+          result match {
+            case Success(r) => (SequenceOutputOperation(sequence.outputOperation(r), idx) :: outputOperations, sequenceErrors)
+            case e: Error => (outputOperations, SequenceError(e, idx) :: sequenceErrors)
+          }
+        }
+        
+      }
     }
 
     private def process(operations: List[Operation[_]], batchProcessors: List[BatchProcessor]) : Tuple2[List[BatchProcessor], List[Result[_]]] = {
@@ -96,25 +104,26 @@ class Executor(batchPrcssrs : List[BatchProcessor]) {
                 val (indexedSequences, indexedRemaining) = extractSequences(operations)
 
                 // recursion for the left side of the sequences
-                val (batchProcessors1, sequenceInputResults) = process(indexedSequences.map(_._1.inputOperation), batchProcessors)
+                val (batchProcessors1, sequenceInputOperationResults) = process(indexedSequences.map(_._1.inputOperation), batchProcessors)
 
-                val sequenceResults = indexedSequences.zip(sequenceInputResults).map(applySequenceTuple _)
+                val (sequenceOutputOperationsWithInputIndex, sequenceErrors) = getSequenceOutputOperations(indexedSequences, sequenceInputOperationResults)
 
                 // recursion for the right side of the sequences
-                val sequenceErrors = getErrors(sequenceResults)
-                val sequenceOutputMonadWithInputIndex = getSuccesses(sequenceResults)
-                val (batchProcessors2, recursionResults) = process(sequenceOutputMonadWithInputIndex.map(_.operation), batchProcessors1)
+                val (batchProcessors2, outputOperationResults) = process(sequenceOutputOperationsWithInputIndex.map(_.operation), batchProcessors1)
 
-                val recursionResultsWithInputIndex = recursionResults.zip(sequenceOutputMonadWithInputIndex).map(t => (t._1, t._2.inputIdx))
+                val outputOperationResultsWithInputIndex = outputOperationResults.zip(sequenceOutputOperationsWithInputIndex).map(t => (t._1, t._2.inputIdx))
 
                 // now, let the batchProcessors do the (possibly slow and expensive) "real" work with side-effects, but keep track of the input index 
-                val processorsWithResults: List[Tuple2[BatchProcessor, List[Tuple2[Result[_], Int]]]] = 
-                    for (partialResult <- executeProcessors(indexedRemaining, batchProcessors2)) yield {partialResult}
+                val (batchProcessors3, processorResults) = List.unzip(executeProcessors(indexedRemaining, batchProcessors2))
 
-                val results: List[Tuple2[Result[_], Int]] = sequenceErrors.map(e => (e.error, e.inputIdx)) ++ recursionResultsWithInputIndex ++ processorsWithResults.flatMap(_._2)
+                val unsortedResults = sequenceErrors.map(e => (e.error, e.inputIdx)) ++ outputOperationResultsWithInputIndex ++ List.flatten(processorResults)
 
-                // sort all results of the processing according to the corresponding input operations 
-                (processorsWithResults.map(_._1), results.sort((t1, t2) => t1._2 < t2._2).map(_._1))
+                val results = unsortedResults.sort((t1, t2) => t1._2 < t2._2).map(_._1)
+                
+                assert(results.length == operations.length)
+                
+                // sort all results of the processing according to the corresponding input operations and strip the index
+                (batchProcessors3, results)
             }
     }
 }

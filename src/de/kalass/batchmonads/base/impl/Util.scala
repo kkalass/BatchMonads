@@ -4,8 +4,8 @@ private[base] object Util {
 
     private[base] def partition[A, B](valuesWithIndices: List[Tuple2[A, Int]], converter: PartialFunction[A, B]) : Tuple2[List[Tuple2[B, Int]], List[Tuple2[A, Int]]] = ((List[Tuple2[B, Int]](), List[Tuple2[A, Int]]()) /: valuesWithIndices) {
       (accumulated, inputTuple) => {
-        val (value, index) = inputTuple
         val (converted, remaining) = accumulated
+        val (value, index) = inputTuple
         if (converter.isDefinedAt(value))
           ((converter(value), index) :: converted, remaining)
         else
