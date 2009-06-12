@@ -36,7 +36,9 @@ class TicketServiceImpl(customerService: CustomerService, siteService: SiteServi
     * which will be used to create the next operation. Note how we use all retrieved data to build
     * the return value.
     */
-    def getTicketsOfCustomer(customerId: Long) : Operation[Tuple3[Customer, Site, List[Ticket]]] = {
+    def getTicketsOfCustomer(customerId: Long) : 
+      Operation[Tuple3[Customer, Site, List[Ticket]]] = 
+    {
         customerService.getCustomer(customerId) ~ (customer => 
         siteService.getSite(customer.siteId)  ~ (site => 
         // we do need to use the methods of a service - here we use the appropriate BatchOperation directly

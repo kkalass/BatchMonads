@@ -42,7 +42,7 @@ private[base] class BaseOperationBatch[I, A] private (
      * of tuples with the results from the BatchOperation and the original 
      * input-indices of the corresponding Operation. 
      */
-    def execute(): List[Tuple2[Result[A], Int]] = {
+    def execute(): List[(Result[A], Int)] = {
         val input = singleOperations.reverse
         val result = batchOperation.fkt(input.map(_.value))
         assert(input.length == result.length)
