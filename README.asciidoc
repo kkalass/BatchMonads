@@ -1,0 +1,4 @@
+BatchMonads
+===========
+
+A Scala library to try out a fancy idea: writing some kind of DSL that can be programmed linearly with single objects in quite "normal" style, but where the actual data-access operations are batched more or less transparently.
