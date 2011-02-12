@@ -2,3 +2,32 @@ BatchMonads
 ===========
 
 A Scala library to try out a fancy idea: writing some kind of DSL that can be programmed linearly with single objects in quite "normal" style, but where the actual data-access operations are batched more or less transparently.
+
+This code is a proof of concept, if you want to see what it is all about, you should have a look at the example directory.
+
+Most interesting is the function TicketServiceImpl.getTicketsOfCustomer which is written in means of single objects, but in a way that allows for Batching of all retrieval or storage methods:
+
+--------------------------------------------
+    /**
+    * Demonstration of a function that uses other Operation instances to build a new Operation instance.
+    * 
+    * What you see here is sequencing of several single operations. Each operation produces a result 
+    * which will be used to create the next operation. Note how we use all retrieved data to build
+    * the return value.
+    */
+    def getTicketsOfCustomer(customerId: Long) : 
+      Operation[Tuple3[Customer, Site, List[Ticket]]] = 
+    {
+        customerService.getCustomer(customerId) ~ (customer => 
+        siteService.getSite(customer.siteId)  ~ (site => 
+        // we do need to use the methods of a service - here we use the appropriate BatchOperation directly
+        this.getTicketsOfCustomers.singleOperation(customer.id) ~ (tickets => 
+        Return((customer, site, tickets))
+        )))// end
+    }
+--------------------------------------------
+
+Conclusion
+----------
+
+This is by no means production ready code, but just a crazy idea of how one could keep coding the traditional way and still improve on concurrency and batching.
